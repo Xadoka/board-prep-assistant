@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { packets, documents, facts } from "@/lib/repo";
 import { reconcile } from "@/lib/reconcile";

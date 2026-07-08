@@ -73,16 +73,32 @@ curl -s -X POST localhost:3000/api/packets/1/synthesize
 | 5 — reconciliation & questions | `reconcile.ts`, synthesis prompt (§9.2) |
 | 6 — export DOCX/PDF | `api/packets/[id]/export` (stub) |
 
+## UI (§7 screens)
+
+The four screens are built in React (App Router, client components) and wired to
+the API above:
+
+- `/` — **Dashboard**: list/create preparations
+- `/packets/:id/sources` — **Источники**: drag-and-drop upload, live status
+  polling, parsed-text preview
+- `/packets/:id/facts` — **Ревью фактов**: fact table with inline edit/delete,
+  conflict highlighting, low-confidence dimming, "Синтезировать packet"
+- `/packets/:id/packet` — **Board packet**: executive summary with clickable
+  `[Fn]` citations, metrics, discrepancies, questions; DOCX/PDF export buttons
+
+Design (flat, light/dark, sentence case) is ported from the root `index.html`
+prototype into `src/app/globals.css`.
+
 ## What's implemented vs stubbed
 
 **Implemented:** schema, storage, chunking, all five parsers, per-chunk
 fact extraction with safe JSON parsing + idempotent upserts, metric
-reconciliation, synthesis, the in-process worker, and all API routes.
+reconciliation, synthesis, the in-process worker, all API routes, and the
+four React screens wired to them.
 
 **Stubbed (clearly marked with TODO):** embeddings provider (Anthropic has no
 embeddings endpoint — plug in Voyage/OpenAI), top-K retrieval at synthesis time
-(Срез 4), and DOCX/PDF export (Срез 6). React screens are not built — the
-`index.html` prototype is the visual reference.
+(Срез 4), and DOCX/PDF export (Срез 6).
 
 ## Notes on the Claude integration (§9, §10)
 

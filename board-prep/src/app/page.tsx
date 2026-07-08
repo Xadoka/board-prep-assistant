@@ -1,34 +1,86 @@
-// Placeholder home page. The UI (§7 screens) is prototyped statically in the
-// repo root (../index.html, published to GitHub Pages). Wiring these API routes
-// into React screens is the next step; for now this page documents the endpoints.
+"use client";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { API, toast, type Packet } from "./_lib/api";
 
-export default function Home() {
-  const endpoints = [
-    ["GET", "/api/packets", "list preparations"],
-    ["POST", "/api/packets", "create a preparation"],
-    ["GET", "/api/packets/:id", "packet detail (docs, facts, discrepancies)"],
-    ["POST", "/api/packets/:id/documents", "upload files (multipart) → async processing"],
-    ["POST", "/api/packets/:id/synthesize", "synthesize packet from verified facts"],
-    ["GET", "/api/packets/:id/export?format=docx|pdf", "export (Срез 6 — stub)"],
-    ["GET", "/api/documents/:id", "document status + preview"],
-    ["GET", "/api/documents/:id/facts", "facts for a document"],
-    ["PATCH|DELETE", "/api/facts/:id", "edit / delete a fact before synthesis"],
-  ];
+// §7.1 Dashboard — list preparations, create a new one.
+export default function Dashboard() {
+  const router = useRouter();
+  const [packets, setPackets] = useState<Packet[] | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    API.listPackets().then(setPackets).catch((e) => setError(e.message));
+  }, []);
+
+  async function create() {
+    const title = window.prompt(
+      "Название подготовки",
+      `Совет директоров · ${new Date().toLocaleDateString("ru-RU")}`
+    );
+    if (!title) return;
+    setCreating(true);
+    try {
+      const { id } = await API.createPacket(title);
+      router.push(`/packets/${id}/sources`);
+    } catch (e) {
+      toast((e as Error).message);
+      setCreating(false);
+    }
+  }
+
   return (
-    <main style={{ fontFamily: "system-ui", maxWidth: 760, margin: "40px auto", padding: "0 20px" }}>
-      <h1>Board Prep Assistant — API</h1>
-      <p>Backend skeleton per PRD §5–§11. See <code>README.md</code> to run it.</p>
-      <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 14 }}>
-        <tbody>
-          {endpoints.map(([m, path, desc]) => (
-            <tr key={path + m} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={{ padding: "6px 10px", fontWeight: 600, whiteSpace: "nowrap" }}>{m}</td>
-              <td style={{ padding: "6px 10px", fontFamily: "monospace" }}>{path}</td>
-              <td style={{ padding: "6px 10px", color: "#666" }}>{desc}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </main>
+    <div className="main">
+      <div className="topbar">
+        <div>
+          <h1>Дашборд</h1>
+          <div className="sub">Подготовки к совету директоров</div>
+        </div>
+        <div className="right">
+          <button className="btn" onClick={create} disabled={creating}>
+            {creating ? <span className="spinner" /> : "+"} Новая подготовка
+          </button>
+        </div>
+      </div>
+      <div className="content">
+        {error && <p className="pill err">{error}</p>}
+        {!packets && !error && <p className="muted">Загрузка…</p>}
+        {packets && packets.length === 0 && (
+          <div className="empty">
+            <div style={{ fontSize: 34, marginBottom: 8 }}>▤</div>
+            <div style={{ fontWeight: 600, color: "var(--text)" }}>Пока нет подготовок</div>
+            <div style={{ margin: "6px 0 18px" }}>Создайте первую и загрузите источники.</div>
+            <button className="btn" onClick={create}>+ Новая подготовка</button>
+          </div>
+        )}
+        {packets && packets.length > 0 && (
+          <div className="grid">
+            {packets.map((p) => (
+              <Link key={p.id} href={`/packets/${p.id}/sources`} className="card packet-card">
+                <h3>{p.title}</h3>
+                <div className="meta">
+                  {new Date(p.created_at).toLocaleString("ru-RU")}
+                </div>
+                <div className="foot">
+                  <span className={`pill ${p.status === "ready" ? "ok" : "info"}`}>
+                    <span className="d" />
+                    {p.status === "ready" ? "packet готов" : "черновик"}
+                  </span>
+                </div>
+              </Link>
+            ))}
+            <button
+              className="card packet-card"
+              style={{ borderStyle: "dashed", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-faint)", minHeight: 120 }}
+              onClick={create}
+            >
+              + новая подготовка
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

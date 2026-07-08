@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 
 // GET /api/packets/:id/export?format=docx|pdf — Срез 6 (v1.1).
