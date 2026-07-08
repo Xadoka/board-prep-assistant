@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Board Prep Assistant</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f6f7f9;
+    --bg-elev: #ffffff;
+    --text: #14161a;
+    --text-soft: #5b6470;
+    --text-faint: #9aa2ad;
+    --border: #e6e8ec;
+    --accent: #2f6df6;
+    --accent-soft: #eaf1ff;
+    --ok: #1a8f5a;
+    --ok-soft: #e6f6ee;
+    --warn: #b4690e;
+    --warn-soft: #fbefd9;
+    --err: #c23a3a;
+    --err-soft: #fbe8e8;
+    --shadow: 0 1px 2px rgba(20,22,26,.04);
+    --radius: 10px;
+  }
+  [data-theme="dark"] {
+    --bg: #0e1116;
+    --bg-soft: #161a21;
+    --bg-elev: #161a21;
+    --text: #e9edf2;
+    --text-soft: #a3adba;
+    --text-faint: #6b7482;
+    --border: #262c36;
+    --accent: #6ea1ff;
+    --accent-soft: #1a2740;
+    --ok: #4cc38a;
+    --ok-soft: #12281e;
+    --warn: #e0a54a;
+    --warn-soft: #2c2210;
+    --err: #ef6a6a;
+    --err-soft: #2c1616;
+    --shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; }
+
+  /* layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 232px; flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    background: var(--bg-soft);
+    padding: 20px 14px;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh;
+  }
+  .brand { display: flex; align-items: center; gap: 9px; padding: 0 6px 20px; }
+  .brand .dot { width: 22px; height: 22px; border-radius: 6px; background: var(--accent); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:13px; }
+  .brand .name { font-weight: 600; font-size: 14.5px; }
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: transparent; border: none;
+    color: var(--text-soft); font-size: 13.5px;
+    padding: 8px 10px; border-radius: 8px;
+  }
+  .nav button:hover { background: var(--bg-elev); color: var(--text); }
+  .nav button.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .nav .ico { width: 16px; text-align: center; opacity: .9; }
+  .nav .badge { margin-left: auto; font-size: 11px; background: var(--border); color: var(--text-soft); border-radius: 20px; padding: 1px 7px; }
+  .sidebar .spacer { flex: 1; }
+  .theme-toggle {
+    display: flex; align-items: center; gap: 8px;
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-soft); padding: 7px 10px; border-radius: 8px; font-size: 13px;
+  }
+  .theme-toggle:hover { color: var(--text); }
+
+  .main { flex: 1; min-width: 0; }
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 28px; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  .topbar h1 { font-size: 17px; font-weight: 600; margin: 0; }
+  .topbar .sub { color: var(--text-faint); font-size: 12.5px; }
+  .topbar .right { margin-left: auto; display: flex; gap: 8px; }
+  .content { padding: 24px 28px 60px; max-width: 1080px; }
+
+  /* generic bits */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--accent); color: #fff; border: none;
+    padding: 8px 14px; border-radius: 8px; font-size: 13.5px; font-weight: 500;
+  }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.ghost { background: transparent; color: var(--text-soft); border: 1px solid var(--border); }
+  .btn.ghost:hover { color: var(--text); background: var(--bg-soft); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.sm { padding: 5px 10px; font-size: 12.5px; }
+
+  .card {
+    background: var(--bg-elev); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11.5px; font-weight: 500; padding: 2px 9px; border-radius: 20px;
+    background: var(--bg-soft); color: var(--text-soft);
+  }
+  .pill .d { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.warn { background: var(--warn-soft); color: var(--warn); }
+  .pill.err { background: var(--err-soft); color: var(--err); }
+  .pill.info { background: var(--accent-soft); color: var(--accent); }
+
+  .muted { color: var(--text-faint); }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text-soft); text-transform: none; margin: 26px 0 12px; }
+
+  /* dashboard */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 14px; }
+  .packet-card { padding: 16px; cursor: pointer; transition: border-color .12s; }
+  .packet-card:hover { border-color: var(--accent); }
+  .packet-card h3 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .packet-card .meta { color: var(--text-faint); font-size: 12.5px; margin-bottom: 14px; }
+  .packet-card .foot { display: flex; align-items: center; gap: 8px; }
+  .stat-row { display: flex; gap: 26px; margin-bottom: 22px; }
+  .stat { }
+  .stat .n { font-size: 24px; font-weight: 650; letter-spacing: -.02em; }
+  .stat .l { color: var(--text-faint); font-size: 12.5px; }
+
+  /* sources */
+  .drop {
+    border: 1.5px dashed var(--border); border-radius: var(--radius);
+    padding: 30px; text-align: center; color: var(--text-soft);
+    background: var(--bg-soft); cursor: pointer; transition: all .12s;
+  }
+  .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+  .drop .big { font-size: 26px; margin-bottom: 6px; }
+  .doc-list { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+  .doc {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--bg-elev);
+  }
+  .doc .ficon { width: 34px; height: 34px; border-radius: 8px; background: var(--bg-soft); display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .doc .info { min-width: 0; flex: 1; }
+  .doc .fn { font-weight: 500; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .doc .sub { color: var(--text-faint); font-size: 12px; }
+  .doc .actions { display:flex; align-items:center; gap: 10px; flex-shrink:0; }
+  .progress { width: 90px; height: 5px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress > i { display:block; height:100%; background: var(--accent); transition: width .3s; }
+
+  /* tables */
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 11.5px; font-weight: 600; color: var(--text-faint);
+    padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.dim { opacity: .5; }
+  tbody tr.conflict { background: var(--warn-soft); }
+  .metric-name { font-weight: 500; }
+  .quote { color: var(--text-soft); font-size: 12.5px; font-style: italic; max-width: 300px; }
+  .src-tag { font-size: 11.5px; color: var(--accent); cursor: pointer; }
+  .src-tag:hover { text-decoration: underline; }
+  .conf-bar { display:inline-flex; align-items:center; gap:6px; }
+  .conf-bar .t { width: 46px; height: 5px; background: var(--border); border-radius: 4px; overflow:hidden; }
+  .conf-bar .t > i { display:block; height:100%; }
+  .row-actions button { background: transparent; border: none; color: var(--text-faint); font-size: 13px; padding: 3px 5px; border-radius: 6px; }
+  .row-actions button:hover { color: var(--err); background: var(--err-soft); }
+  input.cell-edit { width: 100%; font: inherit; padding: 4px 6px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--text); }
+
+  /* packet */
+  .packet-wrap { display: grid; grid-template-columns: 1fr; gap: 20px; }
+  .summary-md { font-size: 14.5px; line-height: 1.7; }
+  .summary-md p { margin: 0 0 12px; }
+  .cite {
+    display: inline-flex; align-items: center; font-size: 10.5px; font-weight: 600;
+    background: var(--accent-soft); color: var(--accent); border-radius: 5px;
+    padding: 0 5px; margin: 0 1px; cursor: pointer; vertical-align: middle; line-height: 1.6;
+    text-decoration: none;
+  }
+  .cite:hover { filter: brightness(.95); text-decoration: none; }
+  .delta.up { color: var(--ok); }
+  .delta.down { color: var(--err); }
+  .q-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .q-item:last-child { border-bottom: none; }
+  .q-item .qt { font-weight: 500; margin-bottom: 4px; }
+  .q-item .qr { color: var(--text-soft); font-size: 13px; }
+  .disc-item { padding: 12px 14px; border: 1px solid var(--warn); background: var(--warn-soft); border-radius: 8px; margin-bottom: 8px; }
+  .disc-item .dm { font-weight: 600; color: var(--warn); margin-bottom: 4px; }
+  .card-pad { padding: 18px 20px; }
+  .card-head { display:flex; align-items:center; gap:10px; padding: 14px 20px; border-bottom: 1px solid var(--border); }
+  .card-head h3 { margin:0; font-size: 14px; font-weight: 600; }
+
+  /* modal */
+  .overlay { position: fixed; inset: 0; background: rgba(10,12,16,.45); display: none; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .overlay.show { display: flex; }
+  .modal { background: var(--bg-elev); border: 1px solid var(--border); border-radius: 14px; max-width: 520px; width: 100%; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .modal .mh { display:flex; align-items:center; padding: 16px 20px; border-bottom: 1px solid var(--border); }
+  .modal .mh h3 { margin:0; font-size: 15px; }
+  .modal .mh button { margin-left:auto; background:transparent;border:none;color:var(--text-faint);font-size:18px; }
+  .modal .mb { padding: 20px; }
+  .modal .quote-block { background: var(--bg-soft); border-left: 3px solid var(--accent); padding: 12px 14px; border-radius: 6px; font-size: 13.5px; line-height:1.6; margin: 12px 0; }
+  .kv { display:flex; gap:10px; font-size:13px; margin-bottom:6px; }
+  .kv .k { color: var(--text-faint); width: 90px; flex-shrink:0; }
+
+  .empty { text-align:center; padding: 50px 20px; color: var(--text-faint); }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-size: 13px; z-index: 60; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+  @media (max-width: 760px) {
+    .sidebar { display: none; }
+    .content { padding: 18px; }
+    .stat-row { flex-wrap: wrap; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="dot">B</div><div class="name">Board Prep Assistant</div></div>
+    <nav class="nav" id="nav">
+      <button data-screen="dashboard"><span class="ico">▤</span> Дашборд</button>
+      <button data-screen="sources"><span class="ico">▢</span> Источники <span class="badge" id="nav-docs">5</span></button>
+      <button data-screen="facts"><span class="ico">≡</span> Ревью фактов <span class="badge" id="nav-facts">11</span></button>
+      <button data-screen="packet"><span class="ico">◈</span> Board packet</button>
+    </nav>
+    <div class="spacer"></div>
+    <button class="theme-toggle" id="themeBtn"><span id="themeIco">◐</span> <span id="themeLbl">Тёмная тема</span></button>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Дашборд</h1>
+        <div class="sub" id="pageSub">Подготовки к совету директоров</div>
+      </div>
+      <div class="right" id="topActions"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------- sample data ----------
+const DOCS = [
+  { id:'d1', type:'report', icon:'▦', filename:'Q3-financials.xlsx', status:'extracted', size:'184 KB', note:'3 листа · 42 чанка' },
+  { id:'d2', type:'report', icon:'▤', filename:'Ops-report-Q3.pdf', status:'extracted', size:'2.1 MB', note:'18 страниц · 61 чанк' },
+  { id:'d3', type:'transcript', icon:'◎', filename:'Board-call-2026-06-30.txt', status:'extracted', size:'46 KB', note:'транскрипт · 4 спикера' },
+  { id:'d4', type:'email', icon:'✉', filename:'Budget-thread.eml', status:'extracted', size:'12 KB', note:'тред · 7 писем' },
+  { id:'d5', type:'report', icon:'▤', filename:'Scan-appendix.pdf', status:'failed', size:'5.4 MB', note:'ошибка парсинга — повреждённый PDF' },
+];
+const DOC_LABEL = { report:'отчёт', transcript:'транскрипт', email:'почта' };
+
+let FACTS = [
+  { id:'F1', doc:'d1', metric:'Выручка', raw:'$4.2M', num:4.2, unit:'$M', period:'Q3 2026', quote:'Total revenue for Q3 came in at $4.2M, up from Q2.', conf:0.95, chunk:'лист «P&L», строка 4' },
+  { id:'F2', doc:'d2', metric:'Revenue', raw:'$4.05M', num:4.05, unit:'$M', period:'Q3 2026', quote:'Recognized revenue in the quarter was approximately $4.05M.', conf:0.82, chunk:'стр. 3, §Финансы' },
+  { id:'F3', doc:'d1', metric:'Валовая маржа', raw:'61%', num:61, unit:'%', period:'Q3 2026', quote:'Gross margin held at 61% versus 58% last quarter.', conf:0.93, chunk:'лист «P&L», строка 9' },
+  { id:'F4', doc:'d1', metric:'ARR', raw:'$16.8M', num:16.8, unit:'$M', period:'Q3 2026', quote:'Exiting ARR reached $16.8M at quarter end.', conf:0.9, chunk:'лист «SaaS», строка 2' },
+  { id:'F5', doc:'d1', metric:'Отток (churn)', raw:'3.2%', num:3.2, unit:'%', period:'Q3 2026', quote:'Logo churn ticked up to 3.2% for the quarter.', conf:0.88, chunk:'лист «SaaS», строка 6' },
+  { id:'F6', doc:'d2', metric:'NRR', raw:'112%', num:112, unit:'%', period:'Q3 2026', quote:'Net revenue retention was 112% across the base.', conf:0.86, chunk:'стр. 5, §Retention' },
+  { id:'F7', doc:'d2', metric:'CAC', raw:'$1,240', num:1240, unit:'$', period:'Q3 2026', quote:'Blended CAC rose to $1,240 from $980.', conf:0.79, chunk:'стр. 8, §GTM' },
+  { id:'F8', doc:'d1', metric:'Расход кэша', raw:'$680k/мес', num:680, unit:'$k/мес', period:'Q3 2026', quote:'Monthly cash burn averaged $680k in the period.', conf:0.9, chunk:'лист «Cash», строка 3' },
+  { id:'F9', doc:'d3', metric:'Runway', raw:'14 месяцев', num:14, unit:'мес', period:'на 30.06', quote:'CFO: we are looking at roughly 14 months of runway.', conf:0.7, chunk:'00:12:40 · CFO' },
+  { id:'F10', doc:'d3', metric:'Наём', raw:'82 чел.', num:82, unit:'чел', period:'Q3 2026', quote:'Headcount finished the quarter at 82 people.', conf:0.75, chunk:'00:21:05 · COO' },
+  { id:'F11', doc:'d4', metric:'Бюджет маркетинга', raw:'?', num:null, unit:null, period:'Q4 2026', quote:'Need sign-off on the Q4 marketing budget — still open.', conf:0.45, chunk:'письмо 5 · от CMO' },
+];
+
+// canonical metric mapping for reconciliation
+const CANON = { 'выручка':'Выручка', 'revenue':'Выручка', 'выр.':'Выручка' };
+function canon(name){ return CANON[name.trim().toLowerCase()] || name; }
+
+let SYNTHESIZED = false;
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const content = $('#content');
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function docById(id){ return DOCS.find(d=>d.id===id); }
+function factById(id){ return FACTS.find(f=>f.id===id); }
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200); }
+
+// discrepancy detection: same canonical metric + period, differing numeric values
+function conflictSet(){
+  const groups = {};
+  FACTS.forEach(f=>{ if(f.num==null) return; const k=canon(f.metric)+'|'+f.period; (groups[k]=groups[k]||[]).push(f); });
+  const ids = new Set();
+  Object.values(groups).forEach(g=>{ const vals=[...new Set(g.map(f=>f.num))]; if(vals.length>1) g.forEach(f=>ids.add(f.id)); });
+  return ids;
+}
+
+function confColor(c){ return c>=0.85 ? 'var(--ok)' : c>=0.65 ? 'var(--warn)' : 'var(--err)'; }
+
+// ---------- screens ----------
+const TITLES = {
+  dashboard:['Дашборд','Подготовки к совету директоров'],
+  sources:['Источники','Загрузка и обработка документов'],
+  facts:['Ревью фактов','Проверьте извлечённые факты перед синтезом'],
+  packet:['Board packet','Q3 2026 · сводка для совета'],
+};
+
+function renderDashboard(){
+  $('#topActions').innerHTML = `<button class="btn" onclick="toast('В прототипе создаётся демо-подготовка')">+ Новая подготовка</button>`;
+  const conflicts = conflictSet().size;
+  content.innerHTML = `
+    <div class="stat-row">
+      <div class="stat"><div class="n">${DOCS.filter(d=>d.status==='extracted').length}/${DOCS.length}</div><div class="l">источников обработано</div></div>
+      <div class="stat"><div class="n">${FACTS.length}</div><div class="l">извлечено фактов</div></div>
+      <div class="stat"><div class="n" style="color:var(--warn)">${new Set([...conflictSet()].map(id=>canon(factById(id).metric))).size}</div><div class="l">расхождений найдено</div></div>
+      <div class="stat"><div class="n">${SYNTHESIZED?'готов':'черновик'}</div><div class="l">статус packet</div></div>
+    </div>
+    <div class="section-title">Подготовки</div>
+    <div class="grid">
+      <div class="card packet-card" onclick="go('packet')">
+        <h3>Совет директоров · Q3 2026</h3>
+        <div class="meta">обновлён сегодня · 5 источников</div>
+        <div class="foot">
+          <span class="pill ${SYNTHESIZED?'ok':'info'}"><span class="d"></span>${SYNTHESIZED?'packet готов':'факты извлечены'}</span>
+          <span class="pill warn"><span class="d"></span>${new Set([...conflictSet()].map(id=>canon(factById(id).metric))).size} расхождения</span>
+        </div>
+      </div>
+      <div class="card packet-card" style="opacity:.6" onclick="toast('Архивная подготовка (демо)')">
+        <h3>Совет директоров · Q2 2026</h3>
+        <div class="meta">архив · 6 источников</div>
+        <div class="foot"><span class="pill ok"><span class="d"></span>экспортирован</span></div>
+      </div>
+      <div class="card packet-card" style="border-style:dashed;display:flex;align-items:center;justify-content:center;color:var(--text-faint);min-height:120px" onclick="go('sources')">
+        + добавить источники к новой подготовке
+      </div>
+    </div>`;
+}
+
+function renderSources(){
+  $('#topActions').innerHTML = `<button class="btn ghost" onclick="go('facts')">К ревью фактов →</button>`;
+  const rows = DOCS.map(d=>{
+    let right;
+    if(d.status==='extracted') right = `<span class="pill ok"><span class="d"></span>факты извлечены</span>`;
+    else if(d.status==='parsing') right = `<div class="progress"><i style="width:60%"></i></div>`;
+    else if(d.status==='failed') right = `<span class="pill err"><span class="d"></span>ошибка</span>`;
+    else right = `<span class="pill"><span class="d"></span>${d.status}</span>`;
+    const facts = FACTS.filter(f=>f.doc===d.id).length;
+    return `<div class="doc">
+      <div class="ficon">${d.icon}</div>
+      <div class="info">
+        <div class="fn">${esc(d.filename)}</div>
+        <div class="sub">${DOC_LABEL[d.type]} · ${d.size} · ${esc(d.note)}${d.status==='extracted'?` · ${facts} фактов`:''}</div>
+      </div>
+      <div class="actions">
+        ${d.status==='extracted'?`<button class="btn ghost sm" onclick="previewDoc('${d.id}')">превью</button>`:''}
+        ${right}
+      </div>
+    </div>`;
+  }).join('');
+  content.innerHTML = `
+    <div class="drop" id="drop">
+      <div class="big">⇪</div>
+      <div>перетащите файлы сюда или нажмите, чтобы выбрать</div>
+      <div class="muted" style="margin-top:4px">PDF, DOCX, XLSX, .txt транскрипты, .eml — до 25 МБ</div>
+    </div>
+    <div class="doc-list">${rows}</div>
+    <p class="muted" style="margin-top:16px;font-size:12.5px">Битый файл получает статус «ошибка» и не блокирует обработку остальных источников (см. §10 PRD).</p>`;
+  const drop = $('#drop');
+  drop.onclick = ()=>simulateUpload();
+  drop.ondragover = e=>{ e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = ()=>drop.classList.remove('over');
+  drop.ondrop = e=>{ e.preventDefault(); drop.classList.remove('over'); simulateUpload(); };
+}
+
+function simulateUpload(){
+  toast('Демо: файлы обрабатываются локально с реальным бэкендом. Здесь показаны образцы.');
+}
+
+function previewDoc(id){
+  const d = docById(id);
+  const fs = FACTS.filter(f=>f.doc===id);
+  openModal(`Превью · ${esc(d.filename)}`, `
+    <div class="kv"><span class="k">тип</span><span>${DOC_LABEL[d.type]}</span></div>
+    <div class="kv"><span class="k">статус</span><span>факты извлечены</span></div>
+    <div class="kv"><span class="k">фактов</span><span>${fs.length}</span></div>
+    <div class="quote-block">${fs.map(f=>`«${esc(f.quote)}» <span class="muted">— ${esc(f.chunk)}</span>`).join('<br><br>')||'—'}</div>`);
+}
+
+function renderFacts(){
+  $('#topActions').innerHTML = `<button class="btn" onclick="synthesize()">⚡ Синтезировать packet</button>`;
+  const conf = conflictSet();
+  const rows = FACTS.map(f=>{
+    const d = docById(f.doc);
+    const isConf = conf.has(f.id);
+    const dim = f.conf < 0.6 ? 'dim' : '';
+    return `<tr class="${isConf?'conflict':''} ${dim}" data-id="${f.id}">
+      <td><span class="pill" style="font-size:10px;background:var(--accent-soft);color:var(--accent)">${f.id}</span></td>
+      <td class="metric-name">${esc(f.metric)} ${isConf?'<span class="pill warn" style="font-size:10px">⚠ расхождение</span>':''}</td>
+      <td data-field="raw">${esc(f.raw)}</td>
+      <td>${esc(f.period)}</td>
+      <td><span class="src-tag" onclick="showCitation('${f.id}')">${esc(d.filename)} ↗</span><div class="quote">«${esc(f.quote.slice(0,70))}${f.quote.length>70?'…':''}»</div></td>
+      <td><div class="conf-bar"><div class="t"><i style="width:${Math.round(f.conf*100)}%;background:${confColor(f.conf)}"></i></div><span class="muted">${f.conf.toFixed(2)}</span></div></td>
+      <td class="row-actions">
+        <button title="редактировать" onclick="editFact('${f.id}')">✎</button>
+        <button title="удалить" onclick="delFact('${f.id}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+  content.innerHTML = `
+    <p class="muted" style="margin:0 0 14px">Конфликтующие значения одной метрики подсвечены. Строки с низкой уверенностью приглушены. Отредактируйте или удалите сомнительные факты до синтеза — это ключевой экран доверия к результату.</p>
+    <div class="card">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Метрика</th><th>Значение</th><th>Период</th><th>Источник · цитата</th><th>Уверенность</th><th></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function editFact(id){
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  const cell = tr.querySelector('[data-field="raw"]');
+  const f = factById(id);
+  cell.innerHTML = `<input class="cell-edit" value="${esc(f.raw)}">`;
+  const inp = cell.querySelector('input');
+  inp.focus(); inp.select();
+  const save = ()=>{ f.raw = inp.value; const m = inp.value.match(/-?\d[\d.,]*/); f.num = m?parseFloat(m[0].replace(/,/g,'')):f.num; renderFacts(); toast('Факт обновлён'); };
+  inp.onblur = save;
+  inp.onkeydown = e=>{ if(e.key==='Enter') save(); if(e.key==='Escape') renderFacts(); };
+}
+function delFact(id){
+  if(!confirm('Удалить факт '+id+'?')) return;
+  FACTS = FACTS.filter(f=>f.id!==id);
+  updateBadges(); renderFacts(); toast('Факт удалён');
+}
+
+function showCitation(id){
+  const f = factById(id); const d = docById(f.doc);
+  openModal(`Источник · ${f.id}`, `
+    <div class="kv"><span class="k">метрика</span><span>${esc(f.metric)}</span></div>
+    <div class="kv"><span class="k">значение</span><span>${esc(f.raw)} · ${esc(f.period)}</span></div>
+    <div class="kv"><span class="k">документ</span><span>${esc(d.filename)}</span></div>
+    <div class="kv"><span class="k">место</span><span>${esc(f.chunk)}</span></div>
+    <div class="kv"><span class="k">уверенность</span><span>${f.conf.toFixed(2)}</span></div>
+    <div class="quote-block">«${esc(f.quote)}»</div>
+    <p class="muted" style="font-size:12px;margin-bottom:0">Каждая цифра прослеживается до дословной цитаты в источнике (§4 PRD).</p>`);
+}
+
+function synthesize(){
+  const btn = $('#topActions').querySelector('button');
+  btn.disabled = true; btn.textContent = '⏳ Синтез…';
+  setTimeout(()=>{ SYNTHESIZED = true; go('packet'); toast('Packet синтезирован из проверенных фактов'); }, 900);
+}
+
+function citeLink(ids){
+  return ids.map(id=>`<a class="cite" onclick="showCitation('${id}')">${id}</a>`).join('');
+}
+
+function renderPacket(){
+  if(!SYNTHESIZED){
+    $('#topActions').innerHTML = `<button class="btn" onclick="go('facts')">→ К ревью фактов</button>`;
+    content.innerHTML = `<div class="empty">
+      <div style="font-size:34px;margin-bottom:8px">◈</div>
+      <div style="font-weight:600;color:var(--text)">Packet ещё не синтезирован</div>
+      <div style="margin:6px 0 18px">Сначала проверьте факты, затем нажмите «Синтезировать packet».</div>
+      <button class="btn" onclick="go('facts')">Перейти к ревью фактов</button>
+    </div>`;
+    return;
+  }
+  $('#topActions').innerHTML = `
+    <button class="btn ghost" onclick="toast('Экспорт в DOCX (v1.1 — Срез 6)')">↓ DOCX</button>
+    <button class="btn ghost" onclick="toast('Экспорт в PDF (v1.1 — Срез 6)')">↓ PDF</button>`;
+
+  // build metrics table from facts (skip conflict duplicates -> reconciled)
+  const deltas = { 'Выручка':'+3.7%', 'Валовая маржа':'+3 п.п.', 'ARR':'+6.3%', 'Отток (churn)':'+0.4 п.п.', 'NRR':'-2 п.п.', 'CAC':'+26.5%', 'Расход кэша':'+8%' };
+  const dirDown = new Set(['Отток (churn)','CAC','Расход кэша']);
+  const shown = ['F1','F3','F4','F5','F6','F7','F8'];
+  const mrows = shown.map(id=>{
+    const f = factById(id); if(!f) return '';
+    const dl = deltas[f.metric]||'';
+    const bad = dirDown.has(f.metric) || /^-/.test(dl);
+    return `<tr>
+      <td class="metric-name">${esc(f.metric)}</td>
+      <td>${esc(f.raw)} ${citeLink([f.id])}</td>
+      <td>${esc(f.period)}</td>
+      <td class="delta ${bad?'down':'up'}">${dl}</td>
+    </tr>`;
+  }).join('');
+
+  const discs = [...new Set([...conflictSet()].map(id=>canon(factById(id).metric)))].map(name=>{
+    const fs = FACTS.filter(f=>canon(f.metric)===name && conflictSet().has(f.id));
+    return `<div class="disc-item">
+      <div class="dm">⚠ ${esc(name)} · расхождение между источниками</div>
+      <div>${fs.map(f=>`<b>${esc(f.raw)}</b> — ${esc(docById(f.doc).filename)} ${citeLink([f.id])}`).join(' vs ')}</div>
+      <div class="muted" style="margin-top:4px;font-size:12.5px">Разные значения за ${esc(fs[0].period)}. Требует выверки до совета.</div>
+    </div>`;
+  }).join('') || '<div class="muted">Расхождений не найдено.</div>';
+
+  const questions = [
+    { t:'Почему выручка за Q3 расходится между финмоделью и операционным отчётом?', r:'$4.2M против $4.05M за один период', ids:['F1','F2'] },
+    { t:'Что стоит за ростом CAC на 26% при росте оттока?', r:'негативная динамика: CAC $1,240, churn 3.2%', ids:['F7','F5'] },
+    { t:'Утверждаем ли бюджет маркетинга на Q4?', r:'открытый вопрос из переписки, не закрыт ни одним отчётом', ids:['F11'] },
+    { t:'Достаточно ли 14 месяцев runway при текущем расходе кэша $680k/мес?', r:'runway из транскрипта + burn из финмодели', ids:['F9','F8'] },
+  ].map(q=>`<div class="q-item"><div class="qt">${esc(q.t)}</div><div class="qr">${esc(q.r)} · ${citeLink(q.ids)}</div></div>`).join('');
+
+  content.innerHTML = `
+  <div class="packet-wrap">
+    <div class="card">
+      <div class="card-head"><h3>Executive summary</h3><span class="pill info" style="margin-left:auto">≤250 слов</span></div>
+      <div class="card-pad summary-md">
+        <p>Выручка за Q3 2026 составила <b>$4.2M</b> ${citeLink(['F1'])}, при этом операционный отчёт даёт <b>$4.05M</b> ${citeLink(['F2'])} — расхождение требует выверки. Валовая маржа выросла до <b>61%</b> ${citeLink(['F3'])}, ARR достиг <b>$16.8M</b> ${citeLink(['F4'])}, NRR удержался на уровне <b>112%</b> ${citeLink(['F6'])}.</p>
+        <p>Тревожные сигналы: отток вырос до <b>3.2%</b> ${citeLink(['F5'])} на фоне роста стоимости привлечения до <b>$1,240</b> ${citeLink(['F7'])}. Расход кэша держится на <b>$680k/мес</b> ${citeLink(['F8'])}, что даёт около <b>14 месяцев</b> runway ${citeLink(['F9'])} при штате <b>82 человека</b> ${citeLink(['F10'])}.</p>
+        <p>Открытый вопрос из переписки — утверждение бюджета маркетинга на Q4 ${citeLink(['F11'])} — не закрыт ни одним отчётом и вынесен на совет.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Ключевые метрики</h3><span class="muted" style="margin-left:auto;font-size:12px">дельта к Q2 2026</span></div>
+      <table>
+        <thead><tr><th>Метрика</th><th>Значение</th><th>Период</th><th>Дельта</th></tr></thead>
+        <tbody>${mrows}</tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Расхождения в источниках</h3></div>
+      <div class="card-pad">${discs}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Вопросы для обсуждения</h3><span class="pill" style="margin-left:auto">${4}</span></div>
+      <div class="card-pad" style="padding-top:0">${questions}</div>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:16px;font-size:12.5px">Каждая цифра кликабельна и ведёт к цитате и документу. Без источника цифра не показывается (§10 PRD).</p>`;
+}
+
+// ---------- modal ----------
+function openModal(title, body){
+  $('#modal').innerHTML = `<div class="mh"><h3>${esc(title)}</h3><button onclick="closeModal()">✕</button></div><div class="mb">${body}</div>`;
+  $('#overlay').classList.add('show');
+}
+function closeModal(){ $('#overlay').classList.remove('show'); }
+$('#overlay').onclick = e=>{ if(e.target.id==='overlay') closeModal(); };
+
+// ---------- router ----------
+function updateBadges(){ $('#nav-docs').textContent = DOCS.length; $('#nav-facts').textContent = FACTS.length; }
+function go(screen){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.screen===screen));
+  $('#pageTitle').textContent = TITLES[screen][0];
+  $('#pageSub').textContent = TITLES[screen][1];
+  ({dashboard:renderDashboard, sources:renderSources, facts:renderFacts, packet:renderPacket})[screen]();
+  location.hash = screen;
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.screen));
+
+// ---------- theme ----------
+$('#themeBtn').onclick = ()=>{
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme', dark?'light':'dark');
+  $('#themeIco').textContent = dark?'◐':'◑';
+  $('#themeLbl').textContent = dark?'Тёмная тема':'Светлая тема';
+  try{ localStorage.setItem('bpa-theme', dark?'light':'dark'); }catch(e){}
+};
+try{ const t=localStorage.getItem('bpa-theme'); if(t==='dark') $('#themeBtn').click(); }catch(e){}
+
+// ---------- init ----------
+updateBadges();
+go((location.hash||'#dashboard').slice(1) in TITLES ? location.hash.slice(1) : 'dashboard');
+</script>
+</body>
+</html>
