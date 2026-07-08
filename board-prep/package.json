@@ -1,0 +1,30 @@
+{
+  "name": "board-prep-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Board Prep Assistant — RAG pipeline: ingest → extract verifiable facts → synthesize board packet",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:init": "node --env-file=.env scripts/db-init.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "mailparser": "^3.7.1",
+    "mammoth": "^1.8.0",
+    "next": "^15.1.0",
+    "pdf-parse": "^1.1.1",
+    "pg": "^8.13.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.11.10",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
